@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Todo } from "@/lib/types";
+import TodoList from "@/components/TodoList";
 
 // Pick three random indexes from the todos array, shuffle & pick 
 // fisher yates shuffle algorithm is fine since each todo has a unique id
@@ -33,18 +34,9 @@ export default async function MainPage() {
       return <div className="text-red-500">Error: Todos have duplicate ids</div>
     }
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-black-100">
-        <h1 >Random Todos</h1>
-        <ul >
-          {todolist.map((todo) => (
-            <li key={todo.id} className="mb-2">
-              <span className="ml-2 text-grey-500">{todo.title}</span>
-              <span className={`ml-2 ${todo.completed ? "text-green-500" : "text-red-500"}`}>
-                {todo.completed ? "Completed" : "Not Completed"}
-              </span>
-            </li>
-          ))}
-        </ul>
+      <div className="p-6">
+        <h1 className="text-2xl mb-4">Todo List</h1>
+        <TodoList todolist={todolist} />
       </div>
     );
   } catch (error) {
