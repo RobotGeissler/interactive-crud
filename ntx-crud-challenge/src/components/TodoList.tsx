@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Todo } from '../lib/types';
+import { Todo } from '@/lib/types';
+import { addTodoAction } from '@/app/actions';
+import { readTodos, writeTodos } from '@/lib/todoStore'; // Import the server action to clear todos
+import { write } from 'fs';
 
 interface TodoListProps {
     todolist: Todo[];
@@ -11,7 +14,7 @@ export default function TodoList({ todolist }: TodoListProps) {
     const [todos, setTodos] = useState<Todo[]>(todolist);
     const [newTitle, setNewTitle] = useState<string>('');
 
-    const addTodo = () => {
+    const addTodo = async () => {
         if (!newTitle.trim()) return;
         const newTodo: Todo = {
           userId: 1,
@@ -19,8 +22,14 @@ export default function TodoList({ todolist }: TodoListProps) {
           title: newTitle,
           completed: false,
         };
+        await addTodoAction(newTodo); // Call the server action to add the todo
         setTodos(prev => [...prev, newTodo]);
         setNewTitle("");
+    };
+
+    const clearTodo = async () => {
+        await writeTodos([]); // Clear the todos in the server action
+        setTodos([]);
     };
 
     const editTodo = (id: number, newTitle: string) => {
@@ -29,6 +38,7 @@ export default function TodoList({ todolist }: TodoListProps) {
         );
     };
 
+    // More expensive to do this on server side without targeted deletions
     const deleteTodo = (id: number) => {
         setTodos(prev => prev.filter(todo => todo.id !== id));
     };
@@ -45,6 +55,9 @@ export default function TodoList({ todolist }: TodoListProps) {
                 />
                 <button onClick={addTodo} className="bg-blue-500 text-white rounded p-2">
                     Add Todo
+                </button>
+                <button onClick={clearTodo} className="bg-red-500 text-white rounded p-2">
+                    Clear Todos
                 </button>
             </div>
             <h2 className="text-xl font-bold mb-4">Todo List</h2>
