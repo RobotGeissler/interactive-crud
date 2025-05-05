@@ -34,12 +34,19 @@ export default function TodoList({ todolist }: TodoListProps) {
         setTodos([]);
     };
 
-    // Could be done faster if using a hasmap but would require rewrite
+    // Could be done faster if using a hashmap but would require rewrite
     const editTodo = (id: number, newTitle: string) => {
         setTodos(prev =>
             prev.map(todo => (todo.id === id ? { ...todo, title: newTitle } : todo))
         );
     };
+
+    // Same as above, could be done faster if using a hasmap but would require rewrite
+    const toggleCompleted = (id: number) => {
+        setTodos(prev =>
+            prev.map(todo => (todo.id === id ? { ...todo, completed: !todo.completed } : todo))
+        );
+    }
 
     // More expensive to do this on server side without targeted deletions
     // Unexpected behavior if items < 3 then all are reset on repop
@@ -94,7 +101,15 @@ export default function TodoList({ todolist }: TodoListProps) {
                     </>
                     ) : (
                     <>
-                        <span className="mr-4">{todo.title}</span>
+                        <span className={`mr-4 ${todo.completed ? 'line-through' : ''}`}>
+                            {todo.title}
+                        </span>
+                        <button
+                            onClick={() => toggleCompleted(todo.id)}
+                            className="bg-blue-400 text-white rounded p-1 mr-2"
+                        >
+                            {todo.completed ? 'Mark Incomplete' : 'Mark Complete'}
+                        </button>
                         <button
                             onClick={() => {
                                 setEditingId(todo.id);
