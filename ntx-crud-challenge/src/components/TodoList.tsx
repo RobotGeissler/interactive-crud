@@ -15,6 +15,8 @@ export default function TodoList({ todolist }: TodoListProps) {
     const [newTitle, setNewTitle] = useState<string>('');
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editTitle, setEditTitle] = useState<string>('');
+    const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all'); 
+    const [searchQuery, setSearchQuery] = useState<string>(''); 
 
     const addTodo = async () => {
         if (!newTitle.trim()) return;
@@ -54,6 +56,15 @@ export default function TodoList({ todolist }: TodoListProps) {
         setTodos(prev => prev.filter(todo => todo.id !== id));
     };
 
+    const filteredTodos = todos.filter(todo => {
+        if (filter === 'active') return !todo.completed;
+        else if (filter === 'completed') return todo.completed;
+        return true; 
+    }).filter(todo => {
+        if (searchQuery) return todo.title.toLowerCase().includes(searchQuery.toLowerCase());
+        return true;
+    });
+
     return (
         <div className="bg-blue-800 p-4">
             <div className="mb-4">
@@ -71,11 +82,30 @@ export default function TodoList({ todolist }: TodoListProps) {
                     Clear Todos
                 </button>
             </div>
+            <div className="mb-4">
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search todos"
+                    className="border rounded p-2 mr-2"
+                />
+                <select
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value as 'all' | 'active' | 'completed')}
+                    className="border rounded p-2"
+                >
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
             <h2 className="text-xl font-bold mb-4">Todo List</h2>
             <ul className="pl-5">
-                {todos.map((todo) => (
+                {filteredTodos.map((todo) => (
                 <li key={todo.id} className="mb-2">
                     {editingId === todo.id ? (
+                    // Active editing state of note
                     <>
                         <input
                             type="text"
@@ -100,6 +130,7 @@ export default function TodoList({ todolist }: TodoListProps) {
                         </button>
                     </>
                     ) : (
+                    // Default state of note
                     <>
                         <span className={`mr-4 ${todo.completed ? 'line-through' : ''}`}>
                             {todo.title}
