@@ -18,7 +18,7 @@ The benefit of this would be to flexibly change the tech stacks, independent sca
 
 - [X] Toggle "Completed" status
 - [ ] Styling and layout improvements
-- [ ] Filter (All / Active / Completed) support
+- [X] Filter & Search (All / Active / Completed) support
 - [ ] Expandable list item views
 - [ ] Animations and transition effects
 - [ ] Add a small interactive minigame on loading
