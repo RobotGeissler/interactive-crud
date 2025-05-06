@@ -38,6 +38,7 @@ export default function TodoList({ todolist }: TodoListProps) {
 
     // Could be done faster if using a hashmap but would require rewrite
     const editTodo = (id: number, newTitle: string) => {
+        if (!newTitle.trim()) return;
         setTodos(prev =>
             prev.map(todo => (todo.id === id ? { ...todo, title: newTitle } : todo))
         );
@@ -101,7 +102,7 @@ export default function TodoList({ todolist }: TodoListProps) {
                 </select>
             </div>
             <h2 className="text-xl font-bold mb-4">Todo List</h2>
-            <ul className="pl-5">
+            <ul className="pl-5 space-y-2">
                 {filteredTodos.map((todo) => (
                 <li key={todo.id} className="mb-2">
                     {editingId === todo.id ? (
@@ -132,7 +133,7 @@ export default function TodoList({ todolist }: TodoListProps) {
                     ) : (
                     // Default state of note
                     <>
-                        <span className={`mr-4 ${todo.completed ? 'line-through' : ''}`}>
+                        <span className={`mr-4 break-words whitespace-normal ${todo.completed ? 'line-through' : ''}`}>
                             {todo.title}
                         </span>
                         <button
