@@ -17,6 +17,7 @@ export default function TodoList({ todolist }: TodoListProps) {
     const [editTitle, setEditTitle] = useState<string>('');
     const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all'); 
     const [searchQuery, setSearchQuery] = useState<string>(''); 
+    const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null); // State to hold the selected todo for editing
 
     const addTodo = async () => {
         if (!newTitle.trim()) return;
@@ -37,24 +38,33 @@ export default function TodoList({ todolist }: TodoListProps) {
     };
 
     // Could be done faster if using a hashmap but would require rewrite
-    const editTodo = (id: number, newTitle: string) => {
+    const editTodo = async (id: number, newTitle: string) => {
         if (!newTitle.trim()) return;
-        setTodos(prev =>
-            prev.map(todo => (todo.id === id ? { ...todo, title: newTitle } : todo))
+        const updatedTodo = todos.map(todo =>
+            todo.id === id ? { ...todo, title: newTitle } : todo
         );
+        await writeTodos(updatedTodo); 
+        setTodos(updatedTodo);
+        setEditingId(null);
+        setEditTitle('');
     };
 
-    // Same as above, could be done faster if using a hasmap but would require rewrite
-    const toggleCompleted = (id: number) => {
-        setTodos(prev =>
-            prev.map(todo => (todo.id === id ? { ...todo, completed: !todo.completed } : todo))
+    // Same as above, could be done faster if using a hashmap but would require rewrite
+    const toggleCompleted = async (id: number) => {
+        const updatedTodo = todos.map(todo =>
+            todo.id === id ? { ...todo, completed: !todo.completed } : todo
         );
+        await writeTodos(updatedTodo);
+        setTodos(updatedTodo);
     }
 
     // More expensive to do this on server side without targeted deletions
     // Unexpected behavior if items < 3 then all are reset on repop
-    const deleteTodo = (id: number) => {
-        setTodos(prev => prev.filter(todo => todo.id !== id));
+    const deleteTodo = async (id: number) => {
+        // TODO Try to throw a better error if the todo is not found
+        const updatedTodos = todos.filter(todo => todo.id !== id);
+        await writeTodos(updatedTodos); // Call the server action to delete the todo
+        setTodos(updatedTodos);
     };
 
     const filteredTodos = todos.filter(todo => {
@@ -67,7 +77,7 @@ export default function TodoList({ todolist }: TodoListProps) {
     });
 
     return (
-        <div className="bg-blue-800 p-4">
+        <div className="bg-gray-800 p-4 min-h-screen text-white flex flex-col">
             <div className="mb-4">
                 <input
                     type="text"
@@ -76,10 +86,10 @@ export default function TodoList({ todolist }: TodoListProps) {
                     placeholder="Add a new todo"
                     className="border rounded p-2 mr-2"
                 />
-                <button onClick={addTodo} className="bg-blue-500 text-white rounded p-2 mr-2">
+                <button onClick={addTodo} className="border border-black-400 bg-emerald-700 text-white rounded p-2 mr-2">
                     Add Todo
                 </button>
-                <button onClick={clearTodo} className="bg-red-500 text-white rounded p-2">
+                <button onClick={clearTodo} className="border border-black-400 bg-rose-900 text-white rounded p-2 mr-2">
                     Clear Todos
                 </button>
             </div>
@@ -102,66 +112,86 @@ export default function TodoList({ todolist }: TodoListProps) {
                 </select>
             </div>
             <h2 className="text-xl font-bold mb-4">Todo List</h2>
-            <ul className="pl-5 space-y-2">
-                {filteredTodos.map((todo) => (
-                <li key={todo.id} className="mb-2">
-                    {editingId === todo.id ? (
-                    // Active editing state of note
-                    <>
-                        <input
-                            type="text"
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            className="border rounded p-1 mr-2"
-                        />
-                        <button
-                            onClick={() => editTodo(todo.id, editTitle)}
-                            className="bg-green-500 text-white rounded p-1 mr-2"
-                        >
-                            Save
-                        </button>
-                        <button
-                            onClick={() => {
-                                setEditingId(null);
-                                setEditTitle('');
-                            }}
-                            className="bg-gray-500 text-white rounded p-1"
-                            >
-                            Cancel
-                        </button>
-                    </>
-                    ) : (
-                    // Default state of note
-                    <>
-                        <span className={`mr-4 break-words whitespace-normal ${todo.completed ? 'line-through' : ''}`}>
-                            {todo.title}
-                        </span>
-                        <button
-                            onClick={() => toggleCompleted(todo.id)}
-                            className="bg-blue-400 text-white rounded p-1 mr-2"
-                        >
-                            {todo.completed ? 'Mark Incomplete' : 'Mark Complete'}
-                        </button>
-                        <button
-                            onClick={() => {
-                                setEditingId(todo.id);
-                                setEditTitle(todo.title);
-                            }}
-                            className="bg-yellow-500 text-white rounded p-1 mr-2"
-                            >
-                            Edit
-                        </button>
-                        <button
-                            onClick={() => deleteTodo(todo.id)}
-                            className="bg-red-600 text-white rounded p-1"
-                            >
-                            Delete
-                        </button>
-                    </>
-                    )}
-                </li>
-                ))}
-            </ul>
+            
+            {filteredTodos.map((todo) => (
+                <div className='flex items-center justify-between mb-4' key={todo.id}>
+                    <div key={todo.id} className="flex justify-between items-start gap-4">
+                        {editingId === todo.id ? (
+                            <>
+                                <input
+                                    type="text"
+                                    value={editTitle}
+                                    onChange={(e) => setEditTitle(e.target.value)}
+                                    className='border rounded p-1 mr-2'
+                                />
+                            </>
+                        ) : (
+                            <span className={`mr-4 break-words whitespace-normal ${todo.completed ? 'line-through' : ''}`}>
+                                {todo.title.length > 60 ? (
+                                    <>
+                                    {todo.title.slice(0, 60)}...{' '}
+                                    <button
+                                        className="text-emerald-700 hover:text-emerald-500"
+                                        onClick={() => {
+                                            setSelectedTodo(todo);
+                                        }}
+                                    >
+                                        Read More
+                                    </button>
+                                    </>
+                                ) : (
+                                    todo.title
+                                )}
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-right">
+                        {editingId === todo.id ? (
+                            <>
+                                <button
+                                    onClick={() => editTodo(todo.id, editTitle)}
+                                    className="bg-green-500 text-white rounded p-1 mr-2"
+                                >
+                                    Save
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setEditingId(null);
+                                        setEditTitle('');
+                                    }}
+                                    className="bg-gray-500 text-white rounded p-1"
+                                >
+                                    Cancel
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => toggleCompleted(todo.id)}
+                                    className="bg-blue-800 text-white rounded p-1 mr-2"
+                                >
+                                    {todo.completed ? 'Mark Incomplete' : 'Mark Complete'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setEditingId(todo.id);
+                                        setEditTitle(todo.title);
+                                    }}
+                                    className="bg-yellow-500 text-white rounded p-1 mr-2"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => deleteTodo(todo.id)}
+                                    className="bg-rose-900 text-white rounded p-1"
+                                >
+                                    Delete
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
