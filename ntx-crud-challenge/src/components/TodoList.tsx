@@ -58,7 +58,7 @@ export default function TodoList({ todolist }: TodoListProps) {
         setTodos(updatedTodo);
     }
 
-    // More expensive to do this on server side without targeted deletions
+    // More expensive to do this on server side without targeted deletions... again hashmap would be better
     // Unexpected behavior if items < 3 then all are reset on repop
     const deleteTodo = async (id: number) => {
         // TODO Try to throw a better error if the todo is not found
@@ -76,6 +76,7 @@ export default function TodoList({ todolist }: TodoListProps) {
         return true;
     });
 
+    // Enchancment: Dynamically expand slice size based on screen size
     return (
         <div className="bg-gray-800 p-4 min-h-screen text-white flex flex-col">
             <div className="mb-4">
@@ -192,6 +193,20 @@ export default function TodoList({ todolist }: TodoListProps) {
                     </div>
                 </div>
             ))}
+            {selectedTodo && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-grey-700 p-4 rounded shadow-lg max-w-md w-full">
+                        <h2 className="text-xl font-bold mb-2">{selectedTodo.completed === true ? "Completed" : "Incomplete"}</h2>
+                        <p className='mr-4 break-words whitespace-normal'>{selectedTodo.title}</p>
+                        <button
+                            onClick={() => setSelectedTodo(null)}
+                            className="mt-4 bg-rose-500 text-white rounded p-1"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
